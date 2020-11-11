@@ -1,0 +1,10 @@
+/node_modules
+/build
+/dist
+.DS_Store
+# bundle.zip
+# chrome.zip
+# firefox.zip
+*.zip 
+# all zip files
+
