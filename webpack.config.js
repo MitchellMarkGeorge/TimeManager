@@ -95,7 +95,7 @@ module.exports = {
       patterns:[
       // {from: 'public', to: 'public'}, 
       { from: 'manifest.json', to: 'manifest.json' },
-    //   { from: 'src/icons', to: 'icons' },
+      { from: 'src/icons', to: 'icons' },
       // { from: 'src/content/content.css', to: 'content/content.css' }
       // {from: 'src/content.css', to: 'content.css'},
       // {from: 'src/ball-clip-rotate.min.css', to: 'ball-clip-rotate.min.css'} 

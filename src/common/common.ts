@@ -76,6 +76,8 @@ export function getActiveTabURL(): Promise<string> {
 }
 
 export function setInitalData(): void {
+
+
   // set day extension is installed -> show how much time was spent on distractions from start date
-//   chrome.storage.local.set({ distractions: DEFAULT_DATA, startDate:  });
+  chrome.storage.local.set({ distractions: DEFAULT_DATA, startDate: Date.now(), whitelist: ["newtab", "extensions"]  });
 }
