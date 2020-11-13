@@ -68,7 +68,7 @@ function startTracking(url: string) {
       });
       session.storage.set(url, newActive);
       session.setActive(newActive);
-      chrome.alarms.create(url, { periodInMinutes: 1 });
+      // chrome.alarms.create(url, { when: Date });
     }
   }
 }
@@ -98,7 +98,7 @@ async function track(initalURL?: string) {
     if (!currentActive.websiteData.potentialDistraction) {
       session.save();
     }
-    
+
     console.log(session.storage.get(currentActive.websiteData.url));
     // if (!currentActive.websiteData.potentialDistraction) {
     //   session.save();
@@ -141,9 +141,26 @@ async function track(initalURL?: string) {
   // }
 }
 
-chrome.windows.onFocusChanged.addListener((id) =>{
-  console.log(`Focused changed ${id === chrome.windows.WINDOW_ID_NONE}`);
-  
+chrome.windows.onFocusChanged.addListener(async (id) => {
+  // console.log(`Focused changed ${id === chrome.windows.WINDOW_ID_NONE}`
+  console.log('here')
+  if (id === chrome.windows.WINDOW_ID_NONE) {
+    console.log('here')
+    const currentActive = session.getActive();
+    if (currentActive) {
+      currentActive.endTracking();
+      console.log('Here');
+      
+      // this makes sure that only changed distractions are saved and that it is not saved any time the tab is changed, but only then it is a distraction
+      if (!currentActive.websiteData.potentialDistraction) {
+        session.save();
+      }
+    }
+  } else {
+    const url = await getURL();
+    startTracking(url);
+  }
+
 })
 
 // chrome.windows.onFocusChanged.addListener(async (windowID) => {
@@ -195,14 +212,16 @@ chrome.runtime.onInstalled.addListener((details) => {
 chrome.notifications.onButtonClicked.addListener((url, index) => {
   if (index == 0) {
     // session.addDistraction(url);
-    let currentActive: Active;
-    if (url === currentActive.websiteData.url) { 
+    let currentActive: Active; // use a variable
+    if (url === session.getActive()?.websiteData?.url) {
       currentActive = session.getActive();
     } else {
       currentActive = session.storage.get(url);
     }
     // do i need to check
+    console.log(currentActive);
     delete currentActive.websiteData.potentialDistraction;
+    // should i save???
   } else {
     session.addToWhitelist(url);
   }
@@ -216,7 +235,7 @@ chrome.notifications.onButtonClicked.addListener((url, index) => {
 
 chrome.tabs.onActivated.addListener(async () => {
   console.log('Activated')
-  
+
   await track();
 });
 
@@ -248,9 +267,9 @@ chrome.alarms.onAlarm.addListener(({ name: urlAlarm }) => {
 
   // if the alarm is not cancled, then we are still on this website (only canceled in the active.endTracking())
   // const currentActive = session.getActive();
-  console.log("Alarm");
+  console.log("Alarm", urlAlarm);
 
-  chrome.notifications.create('urlAlarm', {
+  chrome.notifications.create(urlAlarm, {
     type: "basic",
     iconUrl: "../icons/TimeManagerLogoTrans2.png",
     title: `You have spent a lot of time on ${urlAlarm}`, // You have spent about 30mins
@@ -258,7 +277,7 @@ chrome.alarms.onAlarm.addListener(({ name: urlAlarm }) => {
     buttons: [{ title: "Add website" }, { title: "Whitelist website" }],
   });
   console.log('notification created');
-  
+
 });
 
 chrome.tabs.onUpdated.addListener(async (id, info) => {

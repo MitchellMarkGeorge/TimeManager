@@ -40,6 +40,7 @@ export class Active {
 
   startTracking() {
     this.startTime = Date.now();
+    chrome.alarms.create(this.websiteData.url, { when: this.startTime + 60000 });
     console.log(`Tracking ${this.websiteData.url}`)
   }
 
@@ -64,11 +65,11 @@ export class Active {
     console.log(
       `Time spent on ${this.websiteData.url}: ${this.websiteData.timeSpent} hours`
     );
-    if (this.websiteData.potentialDistraction) {
-      chrome.alarms.clear(this.websiteData.url);
+    // if (this.websiteData.potentialDistraction) {
+    //   chrome.alarms.clear(this.websiteData.url);
       
 
-    }
+    // }
 
     // should i do this for all links
     // for distraction websites, should I send notifications if they spent a lot of time
@@ -94,7 +95,7 @@ export class Session {
   potentialDistractions: WebsiteData[];
   // districtions: DistractionURL[]
   constructor(distractions: typeof DEFAULT_DATA, public whitelist: string[]) {
-    this.storage = new Map<string, Active>();
+    this.storage = new Map<string, Active>(); // need to handle no data
     for (let key of Object.keys(distractions)) {
       this.storage.set(key, new Active(distractions[key]));
     }
