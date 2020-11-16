@@ -18,20 +18,6 @@ export function getHostDomain(url: string): string {
   return domain;
 }
 
-export function createNotification(id: string, title: string, message: string) {
-  chrome.notifications.create(id, {
-    type: "basic", 
-    iconUrl: "", 
-    title, 
-    message, 
-    buttons:[
-      {title: 'Add to the website as a distraction'}, 
-      {title: 'Whitelist this website'},
-    ]
-  })
-  
-}
-
 export function getDistractions(): Promise<WebsiteData[]> {
     return new Promise((resolve, reject) => {
       chrome.storage.local.get(["distractions"], (result) => {
@@ -58,7 +44,7 @@ export function getDistractions(): Promise<WebsiteData[]> {
         }
         // const distractions = result.distractions || []; 
      
-        return resolve(<LoadDataResult>result);
+        return resolve(<LoadDataResult>result || {distractions: DEFAULT_DATA, whitelist: []});
         
       });
     });
@@ -70,7 +56,7 @@ export function getActiveTabURL(): Promise<string> {
   return new Promise((resolve, reject) => {
     chrome.tabs.query({ active: true, currentWindow: true }, (result) => {
       if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
-      return resolve(result[0].url);
+      return resolve(result[0]?.url || '');
     });
   });
 }

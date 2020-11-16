@@ -74,6 +74,8 @@ function startTracking(url: string) {
 }
 
 async function track(initalURL?: string) {
+
+  console.log('track')
   const currentActive = session.getActive();
   // let url: string;
   // if (initalURL) {
@@ -143,23 +145,25 @@ async function track(initalURL?: string) {
 
 chrome.windows.onFocusChanged.addListener(async (id) => {
   // console.log(`Focused changed ${id === chrome.windows.WINDOW_ID_NONE}`
-  console.log('here')
-  if (id === chrome.windows.WINDOW_ID_NONE) {
-    console.log('here')
-    const currentActive = session.getActive();
-    if (currentActive) {
-      currentActive.endTracking();
-      console.log('Here');
+// do more testting
+  await track();
+  // console.log('here')
+  // if (id === chrome.windows.WINDOW_ID_NONE) {
+  //   console.log('here')
+  //   const currentActive = session.getActive();
+  //   if (currentActive) {
+  //     currentActive.endTracking();
+  //     console.log('Here');
       
-      // this makes sure that only changed distractions are saved and that it is not saved any time the tab is changed, but only then it is a distraction
-      if (!currentActive.websiteData.potentialDistraction) {
-        session.save();
-      }
-    }
-  } else {
-    const url = await getURL();
-    startTracking(url);
-  }
+  //     // this makes sure that only changed distractions are saved and that it is not saved any time the tab is changed, but only then it is a distraction
+  //     if (!currentActive.websiteData.potentialDistraction) {
+  //       session.save();
+  //     }
+  //   }
+  // } else {
+  //   const url = await getURL();
+  //   startTracking(url);
+  //}
 
 })
 

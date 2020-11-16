@@ -5,6 +5,10 @@ export class Time {
   static hoursInMinuites(hours: number) {
     return Math.floor(hours * 60);
   }
+
+  static minInMilliseconds(mins: number) {
+    return Math.floor(mins * 60 * 1000);
+  }
   inMinuites() {
     return parseFloat((this.milliseconds / (1000 * 60)).toFixed(4));
   }
@@ -40,8 +44,16 @@ export class Active {
 
   startTracking() {
     this.startTime = Date.now();
-    chrome.alarms.create(this.websiteData.url, { when: this.startTime + 60000 });
-    console.log(`Tracking ${this.websiteData.url}`)
+    // only for potential distractions
+    // different notification for distractions
+
+    const { url, potentialDistraction} = this.websiteData;
+
+    if (potentialDistraction) {
+      chrome.alarms.create(url, { when: this.startTime + Time.minInMilliseconds(2) });  
+    }
+    
+    console.log(`Tracking ${url}`)
   }
 
   getTime(milliseconds: number) {
@@ -65,11 +77,11 @@ export class Active {
     console.log(
       `Time spent on ${this.websiteData.url}: ${this.websiteData.timeSpent} hours`
     );
-    // if (this.websiteData.potentialDistraction) {
-    //   chrome.alarms.clear(this.websiteData.url);
+    if (this.websiteData.potentialDistraction) {
+      chrome.alarms.clear(this.websiteData.url);
       
 
-    // }
+    }
 
     // should i do this for all links
     // for distraction websites, should I send notifications if they spent a lot of time
