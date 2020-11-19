@@ -54,13 +54,15 @@ async function getURL(initalURL?: string) {
 }
 
 function startTracking(url: string) {
-  if (session.inLockDown) { // check if not in clockdown
-    chrome.runtime.sendMessage({request: 'content-lockdown'});
-  } else {
+  
     if (url && !session.whitelist.includes(url)) { // check if the new url is not empty and the url is not on the whitelist
       if (session.storage.has(url)) {
         // can be wither a distraction
         let newActive = session.storage.get(url);
+        if (session.inLockDown && !newActive.websiteData.potentialDistraction) { // check if not in clockdown
+          return chrome.runtime.sendMessage({request: 'content-lockdown'});
+        }
+        
         session.setActive(newActive);
         // I should send reminder if i spend too much time on this page.
       } else {
@@ -74,7 +76,7 @@ function startTracking(url: string) {
         // chrome.alarms.create(url, { when: Date });
       }
     }
-  }
+  
   
 }
 
@@ -158,11 +160,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponce) => {
         sendResponce({
           isWhitlistURL: true,
         });
-      } else {
+      } else { // in lockdown, this might send the previous one// FIX THIS!!!
         const currentActive = session.getActive();
         // currentActive.updateSessionTimeSpent(); // what side-effects could this have??? Would it be better to send the variable seperately
         sendResponce({
           active: currentActive,
+          inLockdown: session.inLockDown
           // sessionTimeSpent: currentActive.getSessionTimeSpent(),
           // distractions: session.storageToJSON()
           
