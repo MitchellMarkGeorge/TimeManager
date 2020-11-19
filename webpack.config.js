@@ -16,7 +16,7 @@ module.exports = {
   entry: {
 
     popup: path.resolve(__dirname, `src/popup/popup.tsx`),
-    content: path.resolve(__dirname, `src/content/content.ts`),
+    content: path.resolve(__dirname, `src/content/content.tsx`),
     background: path.resolve(__dirname, `src/background/background.ts`),
     options: path.resolve(__dirname, `src/options/options.tsx`)
 

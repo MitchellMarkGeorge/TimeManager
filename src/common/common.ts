@@ -37,7 +37,7 @@ export function getDistractions(): Promise<WebsiteData[]> {
 
   export function loadData(): Promise<LoadDataResult>  {
     return new Promise((resolve, reject) => {
-      chrome.storage.local.get(["distractions", "whitelist"], (result) => {
+      chrome.storage.local.get(["distractions", "whitelist", "startDate"], (result) => {
         if (chrome.runtime.lastError) {
           console.log(chrome.runtime.lastError);
           return reject(chrome.runtime.lastError);
@@ -65,5 +65,5 @@ export function setInitalData(): void {
 
 
   // set day extension is installed -> show how much time was spent on distractions from start date
-  chrome.storage.local.set({ distractions: DEFAULT_DATA, startDate: Date.now(), whitelist: ["newtab", "extensions"]  });
+  chrome.storage.local.set({ distractions: DEFAULT_DATA, whitelist: ["newtab", "extensions", "google.com"]  });
 }

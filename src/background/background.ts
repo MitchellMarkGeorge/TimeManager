@@ -1,4 +1,4 @@
-import { Session, Active, MessageEvent } from "./../common/types";
+import { Session, Active, MessageEvent, Time } from "./../common/types";
 import * as common from "../common/common";
 
 let session: Session;
@@ -54,28 +54,32 @@ async function getURL(initalURL?: string) {
 }
 
 function startTracking(url: string) {
-  if (url && !session.whitelist.includes(url)) {
-    if (session.storage.has(url)) {
-      // can be wither a distraction
-      let newActive = session.storage.get(url);
-      session.setActive(newActive);
-      // I should send reminder if i spend too much time on this page.
-    } else {
-      let newActive = new Active({
-        url,
-        timeSpent: 0,
-        potentialDistraction: true,
-      });
-      session.storage.set(url, newActive);
-      session.setActive(newActive);
-      // chrome.alarms.create(url, { when: Date });
+  if (session.inLockDown) { // check if not in clockdown
+    chrome.runtime.sendMessage({request: 'content-lockdown'});
+  } else {
+    if (url && !session.whitelist.includes(url)) { // check if the new url is not empty and the url is not on the whitelist
+      if (session.storage.has(url)) {
+        // can be wither a distraction
+        let newActive = session.storage.get(url);
+        session.setActive(newActive);
+        // I should send reminder if i spend too much time on this page.
+      } else {
+        let newActive = new Active({
+          url,
+          timeSpent: 0,
+          potentialDistraction: true,
+        });
+        session.storage.set(url, newActive);
+        session.setActive(newActive);
+        // chrome.alarms.create(url, { when: Date });
+      }
     }
   }
+  
 }
 
 async function track(initalURL?: string) {
-
-  console.log('track')
+  console.log("track");
   const currentActive = session.getActive();
   // let url: string;
   // if (initalURL) {
@@ -143,9 +147,76 @@ async function track(initalURL?: string) {
   // }
 }
 
+chrome.runtime.onMessage.addListener((message, sender, sendResponce) => {
+  console.log(sender);
+
+  // if (sender?.url.includes('popup') || sender?.url.endsWith('popup')) { // this can
+  if (message.request === "popup-load") {
+    // check if on the whitelist
+    getURL().then((url) => {
+      if (session.isWhitlistURL(url)) {
+        sendResponce({
+          isWhitlistURL: true,
+        });
+      } else {
+        const currentActive = session.getActive();
+        // currentActive.updateSessionTimeSpent(); // what side-effects could this have??? Would it be better to send the variable seperately
+        sendResponce({
+          active: currentActive,
+          // sessionTimeSpent: currentActive.getSessionTimeSpent(),
+          // distractions: session.storageToJSON()
+          
+        });
+      }
+    });
+  } else if (message.request === 'popup-remove-whitelist') {
+    getURL().then(url => {
+      const newActive = session.removeFromWhitelist(url);
+      session.storage.set(url, newActive);
+      session.setActive(newActive);
+      sendResponce({
+        active: newActive
+      })
+    })
+    
+  } else if (message.request === 'popup-add-whitelist') {
+    session.addToWhitelist(message.url);
+  } else if (message.request === 'popup-add-distraction') {
+    session.addToWhitelist(message.url); 
+    const currentActive = session.getActive();
+    delete currentActive.websiteData.potentialDistraction;
+    session.save();
+    // should i save here
+  } else if (message.request === 'popup-remove-distraction') {
+    
+    const currentActive = session.getActive();
+    currentActive.websiteData.potentialDistraction = true;
+    // should i save here
+
+    session.save();
+    
+
+ 
+  } else if (message.reques === "popup-lockdown") {
+    session.inLockDown = true;
+    chrome.alarms.create('LOCKDOWN', {
+      when: Date.now() + Time.minInMilliseconds(30) // lockdown distraction sites for 30 mins
+    });
+
+    if (!session.getActive().websiteData.potentialDistraction) {
+      chrome.runtime.sendMessage({request: 'content-lockdown'})
+    }
+  }
+
+  
+  // }
+
+  return true;
+});
+
 chrome.windows.onFocusChanged.addListener(async (id) => {
   // console.log(`Focused changed ${id === chrome.windows.WINDOW_ID_NONE}`
-// do more testting
+  // do more testting
   await track();
   // console.log('here')
   // if (id === chrome.windows.WINDOW_ID_NONE) {
@@ -154,7 +225,7 @@ chrome.windows.onFocusChanged.addListener(async (id) => {
   //   if (currentActive) {
   //     currentActive.endTracking();
   //     console.log('Here');
-      
+
   //     // this makes sure that only changed distractions are saved and that it is not saved any time the tab is changed, but only then it is a distraction
   //     if (!currentActive.websiteData.potentialDistraction) {
   //       session.save();
@@ -164,8 +235,7 @@ chrome.windows.onFocusChanged.addListener(async (id) => {
   //   const url = await getURL();
   //   startTracking(url);
   //}
-
-})
+});
 
 // chrome.windows.onFocusChanged.addListener(async (windowID) => {
 //   const currentActive = session.getActive();
@@ -201,7 +271,7 @@ chrome.storage.onChanged.addListener((changes) => {
 });
 
 chrome.runtime.onInstalled.addListener((details) => {
-  // if (details.reason == "install") {
+  if (details.reason == "install") {
   common.setInitalData();
 
   // set inital values for storage items
@@ -210,7 +280,7 @@ chrome.runtime.onInstalled.addListener((details) => {
 
   // chrome.runtime.getURL()
   // chrome.tabs.create()
-  // }
+  }
 });
 
 chrome.notifications.onButtonClicked.addListener((url, index) => {
@@ -238,7 +308,7 @@ chrome.notifications.onButtonClicked.addListener((url, index) => {
 // In popup
 
 chrome.tabs.onActivated.addListener(async () => {
-  console.log('Activated')
+  console.log("Activated");
 
   await track();
 });
@@ -268,10 +338,13 @@ chrome.tabs.onActivated.addListener(async () => {
 // });
 
 chrome.alarms.onAlarm.addListener(({ name: urlAlarm }) => {
-
   // if the alarm is not cancled, then we are still on this website (only canceled in the active.endTracking())
   // const currentActive = session.getActive();
   console.log("Alarm", urlAlarm);
+
+  if (urlAlarm === "LOCKDOWN") {
+    session.inLockDown = false;
+  } else {
 
   chrome.notifications.create(urlAlarm, {
     type: "basic",
@@ -280,12 +353,11 @@ chrome.alarms.onAlarm.addListener(({ name: urlAlarm }) => {
     message: "Would you like us to add this website as a distraction?",
     buttons: [{ title: "Add website" }, { title: "Whitelist website" }],
   });
-  console.log('notification created');
-
+}
+  console.log("notification created");
 });
 
 chrome.tabs.onUpdated.addListener(async (id, info) => {
-
   if (info?.url) {
     console.log("updated");
     await track(info?.url);

@@ -7,7 +7,7 @@ export class Time {
   }
 
   static minInMilliseconds(mins: number) {
-    return Math.floor(mins * 60 * 1000);
+    return Math.floor(mins * 60 * 1000); // should i floor it/
   }
   inMinuites() {
     return parseFloat((this.milliseconds / (1000 * 60)).toFixed(4));
@@ -30,21 +30,36 @@ export interface LoadDataResult {
 export interface WebsiteData {
   url: string;
   potentialDistraction?: boolean;
-  timeSpent: number; // in hours
+  timeSpent: number; // in hours - does this have to be in hours??? Can it be in mins???
 }
 
 export type MessageEvent = "pagefocus" | "pageblur" | "pagetimeout";
 
 export class Active {
-  private startTime: number;
+  private startTime: number = 0; // this might be a bug
+  // dailyUsage: number;
+  // public sessionTimeSpent: number = 0; // in hours - might not need this
+  constructor(public websiteData: WebsiteData) {
+    // this.startTime = startTime;
 
-  constructor(public websiteData: WebsiteData) {}
+    // think about this (use in background sctript)
+  }
 
   // constructor(url: string) {}
 
+  // updateSessionTimeSpent() {
+  //   // what side effects could this have
+  //   this.sessionTimeSpent = this.getTime(Date.now() - this.startTime).inHours();
+  // }
+
   startTracking() {
-    this.startTime = Date.now();
-    // only for potential distractions
+    
+
+    //THIS THE THE BEGINING OF THE TIME SPENT ON THAT TAB/ THE TAB URL IS UPDATED/ WINDOW IS FOCUSED IN (ESSENTIOALLY A NEW TAB SESSION) , NOT OVERALL
+    // THIS IS BECAUSE IT IS SET EVERYTIME setTracking() IS CALLED
+  
+    this.startTime = Date.now(); // this changes everytime it is activated (meaning everytime a new tab is changed)
+    // only for potential distractions - MIGHT CHANGE
     // different notification for distractions
 
     const { url, potentialDistraction} = this.websiteData;
@@ -64,7 +79,9 @@ export class Active {
     return this.startTime;
   }
 
+
   endTracking() {
+    // should have protection that startTracking() is called
     const endTime = Date.now();
     // IN HOURS WITH 2 DECIMAL POINTS
     // const timeSpent = parseFloat(
@@ -74,6 +91,7 @@ export class Active {
     const timeSpent = this.getTime(endTime - this.startTime).inHours();
     console.log(timeSpent);
     this.websiteData["timeSpent"] += timeSpent;
+    // this.sessionTimeSpent += (this.sessionTimeSpent - timeSpent); // in hours - might not need this
     console.log(
       `Time spent on ${this.websiteData.url}: ${this.websiteData.timeSpent} hours`
     );
@@ -99,12 +117,12 @@ export class Active {
   }
 }
 
-export interface SessionState {}
 
 export class Session {
   private active: Active;
   public storage: Map<string, Active>;
   potentialDistractions: WebsiteData[];
+  public inLockDown = false // for 30mins/ no distraction websites are allowed
   // districtions: DistractionURL[]
   constructor(distractions: typeof DEFAULT_DATA, public whitelist: string[]) {
     this.storage = new Map<string, Active>(); // need to handle no data
@@ -120,6 +138,26 @@ export class Session {
     return new Session(distractions, whitelist);
   }
 
+  isWhitlistURL(url: string) {
+    return this.whitelist.includes(url);
+  }
+
+  removeFromWhitelist(url: string) {
+    const index = this.whitelist.indexOf(url);;
+    if (index > -1) {
+      this.whitelist.splice(index, 1);
+    }
+
+    
+
+    
+
+
+    chrome.storage.local.set({ whitelist: this.whitelist });
+
+    return new Active({ url, potentialDistraction: true, timeSpent: 0}) // think about time spent
+  }
+
   save() {
     // const distractionIndex = this.distractions.indexOf(this.active.websiteData);
     // //if the active is a distraction
@@ -131,6 +169,28 @@ export class Session {
     // //     this.distractions.push(this.active.websiteData);
     // // }
 
+    // let obj = Object.create(null);
+    // // for (let [k, v] of this.storage.entries()) {
+    // //   // We don’t escape the key '__proto__'
+    // //   // which can cause problems on older engines
+    // //   obj[k] = v;
+    // // }
+
+    // this.storage.forEach((value, key) => {
+    //   if (!value.websiteData.potentialDistraction) {
+    //     obj[key] = value.websiteData;
+    //   }
+    // })
+
+    // console.log('Saved:', obj);
+    const obj = this.storageToJSON();
+
+    
+    // return obj;
+    chrome.storage.local.set({ distractions: obj });
+  }
+
+  storageToJSON() {
     let obj = Object.create(null);
     // for (let [k, v] of this.storage.entries()) {
     //   // We don’t escape the key '__proto__'
@@ -144,18 +204,18 @@ export class Session {
       }
     })
 
-    console.log('Saved:', obj);
-    
-
-    
-    // return obj;
-    chrome.storage.local.set({ distractions: obj });
+    return obj;
   }
 
   addToWhitelist(url: string) {
     this.storage.delete(url);
     this.whitelist.push(url);
     chrome.storage.local.set({ whitelist: this.whitelist });
+  }
+
+  removeDistraction() {
+    const currentActive = this.active;
+    delete currentActive.websiteData.potentialDistraction;
   }
 
   // setActiveFromURL(url: string) {

@@ -8,13 +8,13 @@
     "description": "An extension",
    
     "browser_action": {
-      "default_icon": "icons/logo2.png", 
+      "default_icon": "icons/logo.png", 
       "default_popup": "popup/popup.html"
       
     },
 
     "icons": {
-      "128": "icons/logo2.png"
+      "128": "icons/logo.png"
     },
   
     
