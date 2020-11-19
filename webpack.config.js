@@ -90,6 +90,13 @@ module.exports = {
       chunks: ["options"]
     }),
 
+    new HtmlWebpackPlugin({
+      title: "Content",
+      filename: path.resolve(__dirname, `dist/content/content.html`),
+      template: `src/content/content.html`,
+      chunks: ["content"]
+    }),
+
     new CopyPlugin({
       
       patterns:[

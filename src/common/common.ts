@@ -18,6 +18,9 @@ export function getHostDomain(url: string): string {
   return domain;
 }
 
+// do i need to export it
+export const LOCKDOWNURL = getHostDomain(chrome.runtime.getURL("../content/content.html"));
+
 export function getDistractions(): Promise<WebsiteData[]> {
     return new Promise((resolve, reject) => {
       chrome.storage.local.get(["distractions"], (result) => {
@@ -63,7 +66,9 @@ export function getActiveTabURL(): Promise<string> {
 
 export function setInitalData(): void {
 
+  // this automatically whitelists the lockdown page so it is not tracked
+  // const lockDownUrl = getHostDomain(chrome.runtime.getURL("../content/content.html"));
 
-  // set day extension is installed -> show how much time was spent on distractions from start date
-  chrome.storage.local.set({ distractions: DEFAULT_DATA, whitelist: ["newtab", "extensions", "google.com"]  });
+
+  chrome.storage.local.set({ distractions: DEFAULT_DATA, whitelist: ["newtab", "extensions", "google.com", LOCKDOWNURL]  });
 }

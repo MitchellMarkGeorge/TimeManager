@@ -255,7 +255,16 @@ export class Session {
 
   setActive(active: Active) {
     this.active = active;
-    this.active.startTracking();
+    // if it is not in Lockdown mode and it is not a distraction (it is a potential distraction), track 
+    // if (!this.inLockDown && this.active.websiteData.potentialDistraction) {
+      if (!(this.inLockDown && !this.active.websiteData.potentialDistraction)) {
+        // return;
+        this.active.startTracking();
+      }
+      
+      console.log('here');
+    // }
+    
     //save??
   }
 }

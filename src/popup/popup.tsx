@@ -35,8 +35,17 @@ class Popup extends Component<{}, State> {
 
   getTimeAsString = () => {
     let { timeSpent } = this.state.active.websiteData;
+    console.log(timeSpent);
     const { startTime } = this.state.active;
-    const currentTimeSpent = new Time(Date.now() - startTime);
+    let currentTimeSpent: Time;
+    // if startTime is 0, tracking has not srated
+    if (startTime > 0) { // this might be the problem (or a symptom of a bigger one)
+      currentTimeSpent = new Time(Date.now() - startTime);
+    } else {
+      currentTimeSpent = new Time(0);
+    }
+    
+    console.log(startTime)
     const timeSpentInMins = Math.floor(
       Time.hoursInMinuites(timeSpent) + currentTimeSpent.inMinuites()
     ); // converts time to minuites (rounded)
@@ -115,6 +124,8 @@ class Popup extends Component<{}, State> {
       return `You have spent ${this.getTimeAsString()} on ${
         this.state.active.websiteData.url
       }.`;
+    } else if (!this.state.active && this.state.inLockdown) {
+      return 'This is in lockdown'
     } else {
       return "Loading...";
     }
