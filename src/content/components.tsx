@@ -6,6 +6,7 @@ import './content.css'
 
 interface Props {
   url: string;
+  timeLeftInLockdown: number;
 }
 
 // export  class LockdownComponent extends Component<Props, {}> {
@@ -38,8 +39,7 @@ export const LockdownComponent = (props: Props) => {
         </Heading>
         {/* <ErrorIcon textAlign="center" marginTop="16px" marginBottom="16px" color="danger" size={40} /> */}
         <Text color="muted">
-          You can't access {props.url} in Lockdown Mode. You have *time*
-          left before you can use this site.
+          You can't access  <b>{props.url}</b> in Lockdown Mode. You have <b>{props.timeLeftInLockdown}m</b> left before you can use this site.
         </Text>
       </Box>
     </Box>

@@ -91,7 +91,7 @@ module.exports = {
     }),
 
     new HtmlWebpackPlugin({
-      title: "Content",
+      title: "Lockdown",
       filename: path.resolve(__dirname, `dist/content/content.html`),
       template: `src/content/content.html`,
       chunks: ["content"]

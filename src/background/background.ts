@@ -53,6 +53,14 @@ async function getURL(initalURL?: string) {
   return url;
 }
 
+function getLockdownURL(initalURL:string, time: number) {
+  let url = new URL( chrome.runtime.getURL("../content/content.html"));
+  url.searchParams.set('url', initalURL);
+  url.searchParams.set('endTimeInLockdown', time.toString());
+
+ return url.toString();
+}
+
 function getTabURLandID(): Promise<{ url: string; id: number }> {
   return new Promise((resolve, reject) => {
     chrome.tabs.query({ active: true, currentWindow: true }, (result) => {
@@ -68,6 +76,7 @@ function getTabURLandID(): Promise<{ url: string; id: number }> {
 }
 
 function startTracking(url: string, tabID: number) {
+  // this means the current active migh be behind
   if (url && !session.whitelist.includes(url)) {
     // check if the new url is not empty and the url is not on the whitelist
     if (session.storage.has(url)) {
@@ -77,9 +86,12 @@ function startTracking(url: string, tabID: number) {
         // check if not in clockdown
         // return chrome.runtime.sendMessage({ request: "content-lockdown" });
         // session.setActive(null);
+
+        // do i actually need the id? https://developer.chrome.com/extensions/tabs#method-update
         chrome.tabs.update(tabID, {
           // this can cause problems as
-          url: chrome.runtime.getURL("../content/content.html"),
+          // url: chrome.runtime.getURL("../content/content.html"),
+          url: getLockdownURL(url, session.endTimeInLockdown)
         });
       }
 
@@ -183,18 +195,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponce) => {
   if (message.request === "popup-load") {
     // check if on the whitelist
     getURL().then((url) => {
-      if (session.isWhitlistURL(url)) {
+      if (session.isWhitlistURL(url)) { // need to handle if it is lockdown url
         sendResponce({
           isWhitlistURL: true,
           inLockdown: session.inLockDown,
+          endTimeInLockdown: session.endTimeInLockdown
         });
+    
+
       } else {
-        // in lockdown, this might send the null// FIX THIS!!!
+        
         const currentActive = session.getActive();
         // currentActive.updateSessionTimeSpent(); // what side-effects could this have??? Would it be better to send the variable seperately
         sendResponce({
           active: currentActive,
           inLockdown: session.inLockDown,
+          endTimeInLockdown: session.endTimeInLockdown
           // sessionTimeSpent: currentActive.getSessionTimeSpent(),
           // distractions: session.storageToJSON()
         });
@@ -208,12 +224,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponce) => {
       sendResponce({
         active: newActive,
         inLockdown: session.inLockDown,
+        endTimeInLockdown: session.endTimeInLockdown
       });
     });
   } else if (message.request === "popup-add-whitelist") {
     session.addToWhitelist(message.url);
   } else if (message.request === "popup-add-distraction") {
-    session.addToWhitelist(message.url);
+    // session.addToWhitelist(message.url);
     const currentActive = session.getActive();
     delete currentActive.websiteData.potentialDistraction;
     session.save();
@@ -226,18 +243,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponce) => {
     session.save();
   } else if (message.request === "popup-lockdown") {
     session.inLockDown = true;
+    session.endTimeInLockdown = Date.now() + Time.minInMilliseconds(30);
     chrome.alarms.create("LOCKDOWN", {
-      when: Date.now() + Time.minInMilliseconds(30), // lockdown distraction sites for 30 mins
+      when: session.endTimeInLockdown, // lockdown distraction sites for 30 mins
     });
 
-    // is the current page is a current active,
-    if (!session.getActive().websiteData.potentialDistraction) {
+    // should this be here
+    sendResponce({
+      inLockdown: session.inLockDown,
+        endTimeInLockdown: session.endTimeInLockdown
+    })
+
+    // is the current page is a distraction,show lockdown page
+
+    // I need to check if there is an active first incase the  
+    const currentActive = session.getActive();
+    // also use whitelist
+    if (currentActive && !currentActive?.websiteData?.potentialDistraction) {
+      console.log('entering lockdown', session.getActive());
       // chrome.runtime.sendMessage({ request: "content-lockdown" });
       // stop tracking?
-      console.log(chrome.runtime.getURL("../content/content.html"))
-      getTabURLandID().then(({ id }) => {
+      // console.log(chrome.runtime.getURL("../content/content.html"))
+      getTabURLandID().then(({ id, url }) => {
         chrome.tabs.update(id, {
-          url: chrome.runtime.getURL("../content/content.html"),
+          // url: chrome.runtime.getURL("../content/content.html"),
+          url: getLockdownURL(url, session.endTimeInLockdown)
         });
       });
       // chrome.tabs.update();
@@ -306,7 +336,7 @@ chrome.storage.onChanged.addListener((changes) => {
 });
 
 chrome.runtime.onInstalled.addListener((details) => {
-  if (details.reason == "install") {
+  // if (details.reason == "install") {
     common.setInitalData();
 
     // set inital values for storage items
@@ -315,7 +345,7 @@ chrome.runtime.onInstalled.addListener((details) => {
 
     // chrome.runtime.getURL()
     // chrome.tabs.create()
-  }
+  // }
 });
 
 chrome.notifications.onButtonClicked.addListener((url, index) => {
@@ -379,6 +409,7 @@ chrome.alarms.onAlarm.addListener(({ name: urlAlarm }) => {
 
   if (urlAlarm === "LOCKDOWN") {
     session.inLockDown = false;
+    session.endTimeInLockdown = 0
   } else {
     chrome.notifications.create(urlAlarm, {
       type: "basic",
@@ -392,6 +423,7 @@ chrome.alarms.onAlarm.addListener(({ name: urlAlarm }) => {
 });
 
 chrome.tabs.onUpdated.addListener(async (id, info) => {
+  // this makes sureit isthe track() function is only called when the url of a tab is changed
   if (info?.url) {
     console.log("updated");
     await track();

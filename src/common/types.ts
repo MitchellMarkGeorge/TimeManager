@@ -124,6 +124,7 @@ export class Session {
   potentialDistractions: WebsiteData[];
   public inLockDown = false // for 30mins/ no distraction websites are allowed
   // districtions: DistractionURL[]
+  public endTimeInLockdown: number // this is the time the lockdown will end
   constructor(distractions: typeof DEFAULT_DATA, public whitelist: string[]) {
     this.storage = new Map<string, Active>(); // need to handle no data
     for (let key of Object.keys(distractions)) {
@@ -133,7 +134,9 @@ export class Session {
 
   static async init() {
     // const distractions = await getDistractions();
-
+    // most websites are tracked by session (ie: the time from when the browser is open to then it is closed)
+    // This means that after the browser is closed, most siteds will be tracked anew
+    // the only data/ tracking that is saved are the time spent on distraction pages and the whitelist
     const { distractions, whitelist } = await loadData();
     return new Session(distractions, whitelist);
   }

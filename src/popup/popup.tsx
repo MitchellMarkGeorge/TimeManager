@@ -2,10 +2,12 @@ import { Checkbox, Heading, Paragraph, Button } from "evergreen-ui";
 import React, { Component } from "react";
 import * as ReactDOM from "react-dom";
 import Box from "ui-box";
-// import * as common from "../common/common";
+
 import { Time, WebsiteData } from "../common/types";
 import logo from "../icons/logo.png";
 import "./popup.css";
+
+// BACKGROUND PAGE IS THE SOURCE OF TRUTH FOR ALL INFOMATION/ DATA
 
 interface ActiveProps {
   startTime: number;
@@ -19,6 +21,7 @@ interface State {
   isWhitlistURL?: boolean;
   inLockdown?: boolean; // remove option to add/ remove distraction in lockdown
   // for chart
+  endTimeInLockdown?: number;
 }
 
 class Popup extends Component<{}, State> {
@@ -39,13 +42,14 @@ class Popup extends Component<{}, State> {
     const { startTime } = this.state.active;
     let currentTimeSpent: Time;
     // if startTime is 0, tracking has not srated
-    if (startTime > 0) { // this might be the problem (or a symptom of a bigger one)
+    if (startTime > 0) {
+      // this might be the problem (or a symptom of a bigger one)
       currentTimeSpent = new Time(Date.now() - startTime);
     } else {
       currentTimeSpent = new Time(0);
     }
-    
-    console.log(startTime)
+
+    console.log(startTime);
     const timeSpentInMins = Math.floor(
       Time.hoursInMinuites(timeSpent) + currentTimeSpent.inMinuites()
     ); // converts time to minuites (rounded)
@@ -72,17 +76,22 @@ class Popup extends Component<{}, State> {
   };
 
   changeDistractions = () => {
+    // BACKGROUND SCRIPT SHOULD BE SOURCE OF TRUTH
+    // This might be the only exception, as no "real" data is altered
+    // creates a copy of the acive object in order to manipulate it
     let activeCopy = Object.assign({}, this.state.active);
     if (!this.state.active.websiteData.potentialDistraction) {
       // meaning it is a distraction
       chrome.runtime.sendMessage({ request: "popup-remove-distraction" });
       activeCopy.websiteData.potentialDistraction = true;
-      this.setState({ active: activeCopy });
+      // this.setState({ active: activeCopy });
     } else {
       chrome.runtime.sendMessage({ request: "popup-add-distraction" });
       delete activeCopy.websiteData.potentialDistraction;
-      this.setState({ active: activeCopy });
+      // this.setState({ active: activeCopy });
     }
+
+    this.setState({ active: activeCopy });
   };
 
   changeWhitelist = () => {
@@ -108,8 +117,10 @@ class Popup extends Component<{}, State> {
   };
 
   goIntoLockdown = () => {
-    chrome.runtime.sendMessage({ request: "popup-lockdown" });
-    this.setState({ inLockdown: true });
+    chrome.runtime.sendMessage({ request: "popup-lockdown" }, (response) => {
+      this.setState({ ...response });
+    });
+    // this.setState({ inLockdown: true });
   };
 
   // getEmoji = () => {
@@ -119,21 +130,27 @@ class Popup extends Component<{}, State> {
 
   getText = () => {
     if (this?.state?.isWhitlistURL) {
-      return "This site is whitelisted.";
+      return "This site is whitelisted."; //
     } else if (this.state.active) {
       return `You have spent ${this.getTimeAsString()} on ${
         this.state.active.websiteData.url
       }.`;
     } else if (!this.state.active && this.state.inLockdown) {
-      return 'This is in lockdown'
+      return "This is in lockdown";
     } else {
       return "Loading...";
     }
   };
 
-  render() {
-    
+  timeLeftInLockdown = () => {
+    let timeLeftInLockdown = new Time(
+      this?.state?.endTimeInLockdown - Date.now()
+    ).inMinuites();
+    timeLeftInLockdown = Math.floor(timeLeftInLockdown);
+    return timeLeftInLockdown;
+  };
 
+  render() {
     return (
       <Box position="relative" height="100%" width="100%">
         <Box
@@ -144,21 +161,32 @@ class Popup extends Component<{}, State> {
           transform="translate(-50%, -50%)"
         >
           <Box is="img" src={logo} height={40} width={40} marginBottom="16px" />
-          <Heading size={600} fontWeight="bold" color="#47B881">
+          <Heading
+            size={600}
+            fontWeight="bold"
+            color="#47B881"
+            maxWidth="200px" // these styles truncate the heading if it becomes too long (probably caused by the url)
+            // https://stackoverflow.com/questions/33058004/applying-an-ellipsis-to-multiline-text
+            overflow="hidden"
+            textOverflow="ellipsis"
+          >
             {this.getText()}
           </Heading>
 
           <Paragraph marginTop="16px" color="muted">
             Here are your options:
           </Paragraph>
-
-          {!this.state.isWhitlistURL && this.state.active && (
-            <Checkbox
-              label="Distractions"
-              checked={!this.state.active.websiteData.potentialDistraction}
-              onChange={this.changeDistractions}
-            />
-          )}
+          {/* cant edit distractions while in lockdown */}
+          {!this.state.isWhitlistURL &&
+            this.state.active &&
+            !this.state.inLockdown && (
+              <Checkbox
+                label="Distractions"
+                checked={!this.state.active.websiteData.potentialDistraction}
+                onChange={this.changeDistractions}
+              />
+            )}
+          {/* should the user be able to edite whitelist in lockdown? */}
           <Checkbox
             label="Whitelist"
             checked={this.state.isWhitlistURL}
@@ -172,44 +200,16 @@ class Popup extends Component<{}, State> {
           >
             Lockdown Distractions
           </Button>
+
+          {this?.state?.inLockdown && this?.state?.endTimeInLockdown && (
+            <Paragraph color="muted" marginTop="16px">
+              Time left in lockdown: {this.timeLeftInLockdown() || ">1"}m
+            </Paragraph>
+          )}
         </Box>
       </Box>
     );
   }
 }
-
-// const Active: React.FC<{ active: ActiveProps }> = ({ active }) => {
-//   function getTimeAsString() {
-//     let { timeSpent } = active.websiteData;
-//     const { startTime } = active;
-//     const currentTimeSpent = new Time(Date.now() - startTime);
-//     let timeUnits: "hr" | "m";
-//     // if it is less than an hour, get the time spent in minuites (including the time spent from that current moment)
-//     if (timeSpent < 1) {
-//       timeSpent +=
-//         Time.hoursInMinuites(timeSpent) + currentTimeSpent.inMinuites();
-
-//       timeUnits = "m";
-//     } else {
-//       // else,  , get the time spent in hours (including the time spent from that current moment)
-//       timeSpent += currentTimeSpent.inHours();
-//       timeUnits = "hr";
-//     }
-
-//     return `${Math.floor(timeSpent) || ">1"}${timeUnits}`;
-//   }
-
-//   return (
-//     <Box position="relative" height="100%" width="100%">
-//       <Heading position="absolute"
-//             top="50%"
-//             left="50%"
-//             color="#47B881"
-//             transform="translate(-50%, -50%)">
-//         You have spent a total of <b>{getTimeAsString()}</b> on <b>{active.websiteData.url}</b> 😊
-//       </Heading>
-//     </Box>
-//   );
-// };
 
 ReactDOM.render(<Popup />, document.getElementById("root"));
