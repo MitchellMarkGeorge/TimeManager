@@ -1,4 +1,4 @@
-import { ErrorIcon, Heading, Text } from "evergreen-ui";
+import { Heading, Text } from "evergreen-ui";
 import React from "react";
 import Box from "ui-box";
 
@@ -9,23 +9,9 @@ interface Props {
   timeLeftInLockdown: number;
 }
 
-// export  class LockdownComponent extends Component<Props, {}> {
-//     render() {
-//         return (
-//             <div>
-
-//             </div>
-//         )
-//     }
-// }
-
 export const LockdownComponent = (props: Props) => {
   return (
-    // <div>
-    //     Uh-oh! You cant access {props.url} in Lockdown.
-    //     {/* get time til lockdown ends */}
-    // </div>
-
+ 
     <Box position="relative" height="100%" width="100%">
       <Box
         position="absolute"
@@ -37,9 +23,9 @@ export const LockdownComponent = (props: Props) => {
         <Heading size={900} fontWeight="bold" color="#47B881" marginBottom="16px">
           Uh-oh!
         </Heading>
-        {/* <ErrorIcon textAlign="center" marginTop="16px" marginBottom="16px" color="danger" size={40} /> */}
+      
         <Text color="muted">
-          You can't access  <b>{props.url}</b> in Lockdown Mode. You have <b>{props.timeLeftInLockdown}m</b> left before you can use this site.
+          You can't access  <b>{props.url}</b> in Lockdown Mode. You have <b>{props.timeLeftInLockdown || '>1'}m</b> left before you can use this site.
         </Text>
       </Box>
     </Box>

@@ -3,7 +3,8 @@ import React, { Component } from "react";
 import * as ReactDOM from "react-dom";
 import Box from "ui-box";
 
-import { Time, WebsiteData } from "../common/types";
+import { WebsiteData } from "../common/types";
+import { Time } from "../common/time";
 import logo from "../icons/logo.png";
 import "./popup.css";
 
@@ -17,11 +18,9 @@ interface ActiveProps {
 
 interface State {
   active?: ActiveProps;
-  // sessionTimeSpent?: number; // in hours
   isWhitlistURL?: boolean;
-  inLockdown?: boolean; // remove option to add/ remove distraction in lockdown
-  // for chart
-  endTimeInLockdown?: number;
+  inLockdown?: boolean;
+  endTimeInLockdown?: number; // the actual end time of the lockdown (in milliseconds)
 }
 
 class Popup extends Component<{}, State> {
@@ -37,13 +36,14 @@ class Popup extends Component<{}, State> {
   }
 
   getTimeAsString = () => {
-    let { timeSpent } = this.state.active.websiteData;
+    let { timeSpent } = this.state.active.websiteData; // is in hours -> from saved
     console.log(timeSpent);
     const { startTime } = this.state.active;
     let currentTimeSpent: Time;
-    // if startTime is 0, tracking has not srated
+    // if startTime is 0, tracking has not started
+
+    // this gets the time spent from the time tracking started till now
     if (startTime > 0) {
-      // this might be the problem (or a symptom of a bigger one)
       currentTimeSpent = new Time(Date.now() - startTime);
     } else {
       currentTimeSpent = new Time(0);
@@ -52,7 +52,7 @@ class Popup extends Component<{}, State> {
     console.log(startTime);
     const timeSpentInMins = Math.floor(
       Time.hoursInMinuites(timeSpent) + currentTimeSpent.inMinuites()
-    ); // converts time to minuites (rounded)
+    ); // converts time to minuites (rounded) included
     console.log(timeSpentInMins);
 
     if (timeSpentInMins <= 1) {
@@ -96,17 +96,17 @@ class Popup extends Component<{}, State> {
 
   changeWhitelist = () => {
     // is currently a whitelist url, being clicked means that it the user wants to remove it
-    // otherwise it is the opposite
+    // otherwise, they want to add it
     if (this.state.isWhitlistURL) {
       chrome.runtime.sendMessage(
         // get url using common????
         { request: "popup-remove-whitelist" },
         (response) => {
-          // this will include a new active for that does the tracking
+          // this will include a new active that does the tracking
           this.setState({ ...response, isWhitlistURL: false });
         }
       );
-      // this.setState({ isWhitlistURL: false}); // load the active
+      
     } else {
       chrome.runtime.sendMessage({
         request: "popup-add-whitelist",
@@ -120,15 +120,9 @@ class Popup extends Component<{}, State> {
     chrome.runtime.sendMessage({ request: "popup-lockdown" }, (response) => {
       this.setState({ ...response });
     });
-    // this.setState({ inLockdown: true });
   };
 
-  // getEmoji = () => {
-  //   let { timeSpent } = this.state.active.websiteData;
-  //   timeSpent = Time.timeSpent
-  // }
-
-  getText = () => {
+  getPopupText = () => {
     if (this?.state?.isWhitlistURL) {
       return "This site is whitelisted."; //
     } else if (this.state.active) {
@@ -170,7 +164,7 @@ class Popup extends Component<{}, State> {
             overflow="hidden"
             textOverflow="ellipsis"
           >
-            {this.getText()}
+            {this.getPopupText()}
           </Heading>
 
           <Paragraph marginTop="16px" color="muted">
@@ -187,11 +181,13 @@ class Popup extends Component<{}, State> {
               />
             )}
           {/* should the user be able to edite whitelist in lockdown? */}
+
           <Checkbox
             label="Whitelist"
             checked={this.state.isWhitlistURL}
             onChange={this.changeWhitelist}
           />
+
           <Button
             disabled={this.state.inLockdown}
             appearance="primary"
