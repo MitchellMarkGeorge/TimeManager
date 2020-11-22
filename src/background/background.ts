@@ -10,11 +10,12 @@ let session: Session;
 
 (async () => {
   session = await Session.init();
-  //console.log(session);
+
 
   // let url = await common.getActiveTabURL();
   // url = common.getHostDomain(url);
 
+  // this handles inital tab
   let { url, id } = await common.getTabURLandID();
   if (url && session.isWhitlistURL(url)) {
     session.setActive(null);
@@ -22,42 +23,6 @@ let session: Session;
     startTracking(url, id);
   }
 })();
-//Check inital site???
-
-// async function getURL(initalURL?: string) {
-//   let url: string;
-//   if (initalURL) {
-//     url = initalURL;
-//   } else {
-//     url = await common.getActiveTabURL();
-//   }
-
-//   url = common.getHostDomain(url);
-
-//   return url;
-// }
-
-// function getLockdownURL(distractionURL: string, time: number) {
-//   let url = new URL(chrome.runtime.getURL("../content/content.html"));
-//   url.searchParams.set("url", distractionURL);
-//   url.searchParams.set("endTimeInLockdown", time.toString());
-
-//   return url.toString();
-// }
-
-// function getTabURLandID(): Promise<{ url: string; id: number }> {
-//   return new Promise((resolve, reject) => {
-//     chrome.tabs.query({ active: true, currentWindow: true }, (result) => {
-//       if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
-//       // const { url, id } = result[0];
-//       // console.log(result[0]?.url);
-//       return resolve({
-//         url: result[0]?.url ? common.getHostDomain(result[0]?.url) : "",
-//         id: result[0]?.id || -1,
-//       });
-//     });
-//   });
-// }
 
 function startTracking(url: string, tabID: number) {
   console.log(url);
@@ -99,16 +64,6 @@ function startTracking(url: string, tabID: number) {
 async function track() {
   console.log("track");
   const currentActive = session.getActive();
-  // let url: string;
-  // if (initalURL) {
-  //   url = initalURL;
-  // } else {
-  //   url = await common.getActiveTabURL();
-  // }
-
-  // url = common.getHostDomain(url);
-
-  // let url = await getURL(initalURL);
 
   let { url, id } = await common.getTabURLandID();
 
@@ -142,10 +97,7 @@ async function track() {
 chrome.runtime.onMessage.addListener((message, sender, sendResponce) => {
   console.log("on message");
   //TIDY THIS UP
-  //SWITCH ?????
-  // if (sender?.url.includes('popup') || sender?.url.endsWith('popup')) { // this can
-
-  switch (message.request) {
+   switch (message.request) {
     case "popup-load":
       // check if on the whitelist
       common.getURL().then((url) => {
@@ -167,8 +119,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponce) => {
             active: currentActive,
             inLockdown: session.inLockDown,
             endTimeInLockdown: session.endTimeInLockdown,
-            // sessionTimeSpent: currentActive.getSessionTimeSpent(),
-            // distractions: session.storageToJSON()
+        
           });
         }
       });
@@ -242,98 +193,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponce) => {
       }
       break;
   }
-  // if (message.request === "popup-load") {
-  //   // check if on the whitelist
-  //   getURL().then((url) => {
-  //     if (session.isWhitlistURL(url)) {
-  //       // need to handle if it is lockdown url
-  //       sendResponce({
-  //         isWhitlistURL: true,
-  //         inLockdown: session.inLockDown,
-  //         endTimeInLockdown: session.endTimeInLockdown,
-  //       });
-  //     } else {
-  //       // const currentActive = session.inLockDown
-  //       //   ? session.storage.get(url)
-  //       //   : session.getActive();
 
-  //       const currentActive = session.getActive();
-
-  //       sendResponce({
-  //         active: currentActive,
-  //         inLockdown: session.inLockDown,
-  //         endTimeInLockdown: session.endTimeInLockdown,
-  //         // sessionTimeSpent: currentActive.getSessionTimeSpent(),
-  //         // distractions: session.storageToJSON()
-  //       });
-  //     }
-  //   });
-  // } else if (message.request === "popup-remove-whitelist") {
-  //   getURL().then((url) => {
-  //     const newActive = session.removeFromWhitelist(url);
-  //     session.storage.set(url, newActive);
-  //     session.setActive(newActive);
-  //     sendResponce({
-  //       active: newActive,
-  //       inLockdown: session.inLockDown,
-  //       endTimeInLockdown: session.endTimeInLockdown,
-  //     });
-  //   });
-  // } else if (message.request === "popup-add-whitelist") {
-  //   session.addToWhitelist(message.url);
-  // } else if (message.request === "popup-add-distraction") {
-  //   // session.addToWhitelist(message.url);
-  //   const currentActive = session.getActive();
-  //   delete currentActive.websiteData.potentialDistraction;
-  //   session.save();
-  //   // should i save here
-  // } else if (message.request === "popup-remove-distraction") {
-  //   const currentActive = session.getActive();
-  //   currentActive.websiteData.potentialDistraction = true;
-  //   // should i save here
-
-  //   session.save();
-  // } else if (message.request === "popup-lockdown") {
-  //   session.inLockDown = true;
-  //   session.endTimeInLockdown = Date.now() + Time.minInMilliseconds(30);
-  //   chrome.alarms.create("LOCKDOWN", {
-  //     when: session.endTimeInLockdown, // lockdown distraction sites for 30 mins
-  //   });
-
-  //   // should this be here
-  //   sendResponce({
-  //     inLockdown: session.inLockDown,
-  //     endTimeInLockdown: session.endTimeInLockdown,
-  //   });
-
-  //   // is the current page is a distraction,show lockdown page
-
-  //   // I need to check if there is an active first incase the
-  //   const currentActive = session.getActive();
-  //   // also use whitelist
-  //   if (currentActive && session.isDistraction(currentActive)) {
-  //     console.log("entering lockdown", session.getActive());
-  //     // chrome.runtime.sendMessage({ request: "content-lockdown" });
-  //     // stop tracking?
-  //     // console.log(chrome.runtime.getURL("../content/content.html"))
-  //     getTabURLandID().then(({ id, url }) => {
-  //       chrome.tabs.update(id, {
-  //         // url: chrome.runtime.getURL("../content/content.html"),
-  //         url: getLockdownURL(url, session.endTimeInLockdown),
-  //       });
-  //     });
-  //     // chrome.tabs.update();
-  //   }
-  // }
-
-  // }
-
-  return true;
+  return true; // async
 });
 
 chrome.windows.onFocusChanged.addListener(async (id) => {
-  // console.log(`Focused changed ${id === chrome.windows.WINDOW_ID_NONE}`
-  // do more testting
+
+  // do more testing
   await track(); // check if this works
 });
 
@@ -346,9 +212,9 @@ chrome.runtime.onInstalled.addListener((details) => {
 
 chrome.notifications.onButtonClicked.addListener((url, index) => {
   if (index == 0) {
-    // session.addDistraction(url);
+ 
     let referencedActive: Active;
-    // if it still on the current tab, use that, else, get from storage
+    // if it still on the current tab, use that active, else, get from storage
     if (url === session.getActive()?.websiteData?.url) {
       referencedActive = session.getActive();
     } else {
@@ -369,7 +235,7 @@ chrome.notifications.onButtonClicked.addListener((url, index) => {
 
 chrome.tabs.onActivated.addListener(async (info) => {
   console.log("Activated");
-  // info.tabId
+  
   await track();
 });
 
@@ -387,7 +253,7 @@ chrome.alarms.onAlarm.addListener(({ name: urlAlarm }) => {
     chrome.notifications.create({
       iconUrl: "../icons/TimeManagerLogoTrans2.png",
       type: "basic",
-      title: "Lockdown ended",
+      title: "Lockdown ended.",
       message: "You can now access your distractions.",
     });
   } else {

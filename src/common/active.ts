@@ -11,16 +11,11 @@ export class Active {
       // think about this (use in background sctript)
     }
   
-    get isDistraction() {
-      return !this.websiteData.potentialDistraction;
-    }
-  
-    // constructor(url: string) {}
-  
-    // updateSessionTimeSpent() {
-    //   // what side effects could this have
-    //   this.sessionTimeSpent = this.getTime(Date.now() - this.startTime).inHours();
+    // get isDistraction() {
+    //   return !this.websiteData.potentialDistraction;
     // }
+  
+   
   
     startTracking() {
       
@@ -35,7 +30,7 @@ export class Active {
       const { url, potentialDistraction} = this.websiteData;
   
       if (potentialDistraction) {
-        chrome.alarms.create(url, { when: this.startTime + Time.minInMilliseconds(2) }); // alarm should be called n minuites later  // 10 minuites or 15
+        chrome.alarms.create(url, { when: this.startTime + Time.minInMilliseconds(10) }); // alarm should be called n minuites later  // 10 minuites or 15
       } // should this only be called once
       
       console.log(`Tracking ${url}`)
@@ -54,9 +49,7 @@ export class Active {
       // should have protection that startTracking() is called
       const endTime = Date.now();
       // IN HOURS WITH 2 DECIMAL POINTS
-      // const timeSpent = parseFloat(
-      //   (endTime - this.startTime / (1000 * 60 * 60)).toFixed(2)
-      // );
+      
   
       const timeSpent = this.getTime(endTime - this.startTime).inHours();
       console.log(timeSpent);
@@ -71,18 +64,6 @@ export class Active {
   
       }
   
-      // should i do this for all links
-      // for distraction websites, should I send notifications if they spent a lot of time
-  
-      // if (this.websiteData.potentialDistraction) {
-      //   // chrome.alarms.clear(this.websiteData.url);
-      //   const { url } = this.websiteData;
-      //   const timeSpentInMins = Time.hoursInMinuites(timeSpent);
-      //   // can be 0??
-      //   if (timeSpentInMins && timeSpentInMins >= 15) {
-      //     showTimeSpentNotification(url);
-      //     //}
-      //   }
-      // }
+      
     }
   }

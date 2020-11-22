@@ -79,8 +79,6 @@ export function getTabURLandID(): Promise<{ url: string; id: number }> {
   return new Promise((resolve, reject) => {
     chrome.tabs.query({ active: true, currentWindow: true }, (result) => {
       if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
-      // const { url, id } = result[0];
-      // console.log(result[0]?.url);
       return resolve({
         url: result[0]?.url ? getHostDomain(result[0]?.url) : "",
         id: result[0]?.id || -1,
@@ -91,9 +89,7 @@ export function getTabURLandID(): Promise<{ url: string; id: number }> {
 
 export function setInitalData(): void {
   // this automatically whitelists the lockdown page so it is not tracked
-  // const lockDownUrl = getHostDomain(chrome.runtime.getURL("../content/content.html"));
-
-  chrome.storage.local.set({
+    chrome.storage.local.set({
     distractions: DEFAULT_DATA,
     whitelist: ["newtab", "extensions", "google.com", LOCKDOWNURL],
   });
