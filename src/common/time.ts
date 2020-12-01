@@ -7,6 +7,7 @@ export class Time {
     static minInMilliseconds(mins: number) {
       return Math.floor(mins * 60 * 1000); // should i floor it/
     }
+    
     inMinuites() {
       return parseFloat((this.milliseconds / (1000 * 60)).toFixed(4));
     }

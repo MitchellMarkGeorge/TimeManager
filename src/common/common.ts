@@ -23,6 +23,10 @@ export const LOCKDOWNURL = getHostDomain(
   chrome.runtime.getURL("../content/content.html")
 );
 
+export const STATISTICSURL = getHostDomain(
+  chrome.runtime.getURL("../options/options.html")
+);
+
 export function loadData(): Promise<LoadDataResult> {
   return new Promise((resolve, reject) => {
     chrome.storage.local.get(
@@ -88,9 +92,9 @@ export function getTabURLandID(): Promise<{ url: string; id: number }> {
 }
 
 export function setInitalData(): void {
-  // this automatically whitelists the lockdown page so it is not tracked
-    chrome.storage.local.set({
+  // this automatically whitelists the lockdown page and statistics page so they are not tracked
+  chrome.storage.local.set({
     distractions: DEFAULT_DATA,
-    whitelist: ["newtab", "extensions", "google.com", LOCKDOWNURL],
+    whitelist: ["newtab", "extensions", "google.com", LOCKDOWNURL, STATISTICSURL],
   });
 }

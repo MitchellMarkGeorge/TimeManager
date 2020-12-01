@@ -9,6 +9,11 @@
     "default_icon": "icons/logo.png",
     "default_popup": "popup/popup.html"
   },
+
+  "chrome_url_overrides": {
+    "newtab": "newtab/newtab.html"
+  },
+
   "icons": {
     "128": "icons/logo.png"
   },

@@ -18,7 +18,8 @@ module.exports = {
     popup: path.resolve(__dirname, `src/popup/popup.tsx`),
     content: path.resolve(__dirname, `src/content/content.tsx`),
     background: path.resolve(__dirname, `src/background/background.ts`),
-    options: path.resolve(__dirname, `src/options/options.tsx`)
+    options: path.resolve(__dirname, `src/options/options.tsx`),
+    newtab: path.resolve(__dirname, `src/newtab/newtab.tsx`)
 
   },
   output: {
@@ -84,7 +85,7 @@ module.exports = {
       chunks: ["popup"]
     }),
     new HtmlWebpackPlugin({
-      title: "Options",
+      title: "Statistics",
       filename: path.resolve(__dirname, `dist/options/options.html`),
       template: `src/options/options.html`,
       chunks: ["options"]
@@ -95,6 +96,13 @@ module.exports = {
       filename: path.resolve(__dirname, `dist/content/content.html`),
       template: `src/content/content.html`,
       chunks: ["content"]
+    }),
+
+    new HtmlWebpackPlugin({
+      title: "New Tab",
+      filename: path.resolve(__dirname, `dist/newtab/newtab.html`),
+      template: `src/newtab/newtab.html`,
+      chunks: ["newtab"]
     }),
 
     new CopyPlugin({
