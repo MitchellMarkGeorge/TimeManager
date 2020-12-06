@@ -139,6 +139,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponce) => {
       });
       break;
 
+    
+
     case "popup-add-whitelist":
       session.addToWhitelist(message.url);
       break;
@@ -221,7 +223,7 @@ chrome.notifications.onButtonClicked.addListener((url, index) => {
       referencedActive = session.storage.get(url);
     }
 
-    chrome.alarms.clear(referencedActive.websiteData.url); // could still have their allarms
+    chrome.alarms.clear(referencedActive.websiteData.url); // could still have their alarms - should they tho?
     delete referencedActive.websiteData.potentialDistraction;
     session.save();
   } else {

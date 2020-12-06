@@ -13,11 +13,11 @@ interface State {
 
 export class Newtab extends Component<{}, State> {
   state: State = { inputValue: "" };
-  interval?: number;
+  intervalID?: number;
 
   componentDidMount() {
     this.setState({ currentTime: this.getCurrentTime() }, () => {
-      this.interval = setInterval(() => {
+      this.intervalID = setInterval(() => {
         //   console.log('here')
         this.setState({ currentTime: this.getCurrentTime() }),
           Time.minInMilliseconds(1);
@@ -26,7 +26,7 @@ export class Newtab extends Component<{}, State> {
   }
 
   componentWillUnmount() {
-    clearInterval(this.interval);
+    clearInterval(this.intervalID);
   }
 
   onKeyPress = (event) => {
@@ -42,6 +42,7 @@ export class Newtab extends Component<{}, State> {
   getCurrentTime = () => {
     // console.log(new Date().toLocaleDateString());
     const now = new Date(); // (am/ pm)
+    // this handles 24 hourtime -> 13 - 1pm
     let hour = now.getHours() > 12 ? now.getHours() - 12 : now.getHours();
 
     let mins: string | number = now.getMinutes();
@@ -89,7 +90,7 @@ export class Newtab extends Component<{}, State> {
           </Box>
 
           {/* search bar */}
-          <Text color="muted">
+          <Text color="muted" fontSize="1rem">
             Have a productive day! {/* might make random phrase */}
             <Link
               textDecoration="none"
