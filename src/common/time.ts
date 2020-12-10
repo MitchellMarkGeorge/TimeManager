@@ -18,5 +18,5 @@ export class Time {
       return parseFloat((this.milliseconds / 1000).toFixed(4));
     }
   
-    // what is i want to go from hours to millseconods/minuites
+    // what if i want to go from hours to millseconods/minuites
   }

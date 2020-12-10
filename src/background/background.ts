@@ -11,10 +11,9 @@ let session: Session;
 (async () => {
   session = await Session.init();
 
-
   // let url = await common.getActiveTabURL();
   // url = common.getHostDomain(url);
-
+ 
   // this handles inital tab
   let { url, id } = await common.getTabURLandID();
   if (url && session.isWhitlistURL(url)) {
@@ -33,18 +32,20 @@ function startTracking(url: string, tabID: number) {
     let active = session.storage.get(url);
 
     if (session.inLockDown && session.isDistraction(active)) {
-      // check if in lockdown and is a distraction -> then this will dosplay the distraction page and set active as null
-      // i do this as there is no need to keep set the active, and this also reducies the chance of it being accidentally mutated
+      // check if in lockdown and is a distraction -> then this will display the distraction page and set active as null
+      // i do this as there is no need to keep set the active, and this also reduces the chance of it being accidentally mutated
 
       // do i actually need the id? https://developer.chrome.com/extensions/tabs#method-update
       session.setActive(null); // should i do this outside of function
       chrome.tabs.update(tabID, {
-        // this can cause problems as
         // url: chrome.runtime.getURL("../content/content.html"),
         url: common.getLockdownURL(url, session.endTimeInLockdown),
       });
     } else {
-      // only track when not in lockdown or if ints not a distraction
+      // only track when not in lockdown or if its not a distraction
+
+      // track distractions not in lockdown
+      // track potential distraction in and not in lockdown
       session.setActive(active);
       active.startTracking();
     }
@@ -66,15 +67,14 @@ async function track() {
   const currentActive = session.getActive();
 
   let { url, id } = await common.getTabURLandID();
-
   // check if there is an active website being tracked. If there is, check if it is the url and if it is the same, move one
   // If not, end the tracking and save the result to storage
 
   if (currentActive) {
-    if (currentActive.websiteData.url === url) return; // incase the user is going from tab to tab with the same url
-    // this also means the user can"escape" the lockdown by right clicking on the back button
+    if (currentActive.websiteData.url === url) return; // in case the user is going from tab to tab with the same url
+    // this also means the user can "escape" the lockdown by right clicking on the back button
 
-    // if in lockdown and active is a distraction, do nothing. else, end tracking
+    // end tracking of previous active
 
     currentActive.endTracking();
 
@@ -97,7 +97,7 @@ async function track() {
 chrome.runtime.onMessage.addListener((message, sender, sendResponce) => {
   console.log("on message");
   //TIDY THIS UP
-   switch (message.request) {
+  switch (message.request) {
     case "popup-load":
       // check if on the whitelist
       common.getURL().then((url) => {
@@ -119,7 +119,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponce) => {
             active: currentActive,
             inLockdown: session.inLockDown,
             endTimeInLockdown: session.endTimeInLockdown,
-        
           });
         }
       });
@@ -138,8 +137,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponce) => {
         });
       });
       break;
-
-    
 
     case "popup-add-whitelist":
       session.addToWhitelist(message.url);
@@ -200,7 +197,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponce) => {
 });
 
 chrome.windows.onFocusChanged.addListener(async (id) => {
-
   // do more testing
   await track(); // check if this works
 });
@@ -214,7 +210,6 @@ chrome.runtime.onInstalled.addListener((details) => {
 
 chrome.notifications.onButtonClicked.addListener((url, index) => {
   if (index == 0) {
- 
     let referencedActive: Active;
     // if it still on the current tab, use that active, else, get from storage
     if (url === session.getActive()?.websiteData?.url) {
@@ -231,13 +226,13 @@ chrome.notifications.onButtonClicked.addListener((url, index) => {
   }
 });
 
-// chrome.runtime.onStartup
+
 
 // In popup
 
 chrome.tabs.onActivated.addListener(async (info) => {
   console.log("Activated");
-  
+
   await track();
 });
 

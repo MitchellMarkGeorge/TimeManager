@@ -20,11 +20,11 @@ export class Active {
     startTracking() {
       
   
-      //THIS THE THE BEGINING OF THE TIME SPENT ON THAT TAB/ THE TAB URL IS UPDATED/ WINDOW IS FOCUSED IN (ESSENTIOALLY A NEW TAB SESSION) , NOT OVERALL
+      //THIS THE THE BEGINING OF THE TIME SPENT ON THAT TAB/ THE TAB URL IS UPDATED/ WINDOW IS FOCUSED IN (ESSENTIALLY A NEW TAB SESSION) , NOT OVERALL
       // THIS IS BECAUSE IT IS SET EVERYTIME setTracking() IS CALLED
     
       this.startTime = Date.now(); // this changes everytime it is activated (meaning everytime a new tab is changed) or updade or window is changed
-      // only for potential distractions - MIGHT CHANGE
+      // notifications only for potential distractions - MIGHT CHANGE
       // different notification for distractions
   
       const { url, potentialDistraction} = this.websiteData;
@@ -33,7 +33,7 @@ export class Active {
         chrome.alarms.create(url, { when: this.startTime + Time.minInMilliseconds(10) }); // alarm should be called n minuites later  // 10 minuites or 15
       } // should this only be called once
       
-      console.log(`Tracking ${url}`)
+      console.log(`Tracking ${url}`);
     }
   
     getTime(milliseconds: number) {
