@@ -38,11 +38,6 @@ export default class Options extends Component {
   }
 
   getData = () => {
-    console.log(
-      Array.from({ length: this.state.websiteNames.length }, () =>
-        this.dynamicColors()
-      )
-    );
     return {
       labels: this.state.websiteNames,
       datasets: [
@@ -58,7 +53,7 @@ export default class Options extends Component {
     };
   };
 
-  dynamicColors = function () {
+  dynamicColors =  () => {
     let r = Math.floor(Math.random() * 255);
     let g = Math.floor(Math.random() * 255);
     let b = Math.floor(Math.random() * 255);

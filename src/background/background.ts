@@ -15,22 +15,22 @@ let session: Session;
   // url = common.getHostDomain(url);
  
   // this handles inital tab
-  let { url, id } = await common.getTabURLandID();
+  let { url, id, originalUrl } = await common.getTabURLandID();
   if (url && session.isWhitlistURL(url)) {
     session.setActive(null);
   } else {
-    startTracking(url, id);
+    startTracking(url, id, originalUrl);
   }
 })();
 
-function startTracking(url: string, tabID: number) {
+function startTracking(url: string, tabID: number, originalUrl: string) {
   console.log(url);
   if (!url) return;
 
   if (session.storage.has(url)) {
     // can be wither a distraction
     let active = session.storage.get(url);
-
+    console.log(active);
     if (session.inLockDown && session.isDistraction(active)) {
       // check if in lockdown and is a distraction -> then this will display the distraction page and set active as null
       // i do this as there is no need to keep set the active, and this also reduces the chance of it being accidentally mutated
@@ -39,7 +39,7 @@ function startTracking(url: string, tabID: number) {
       session.setActive(null); // should i do this outside of function
       chrome.tabs.update(tabID, {
         // url: chrome.runtime.getURL("../content/content.html"),
-        url: common.getLockdownURL(url, session.endTimeInLockdown),
+        url: common.getLockdownURL(url, session.endTimeInLockdown, originalUrl),
       });
     } else {
       // only track when not in lockdown or if its not a distraction
@@ -66,7 +66,7 @@ async function track() {
   console.log("track");
   const currentActive = session.getActive();
 
-  let { url, id } = await common.getTabURLandID();
+  let { url, id, originalUrl } = await common.getTabURLandID();
   // check if there is an active website being tracked. If there is, check if it is the url and if it is the same, move one
   // If not, end the tracking and save the result to storage
 
@@ -90,7 +90,7 @@ async function track() {
     session.setActive(null);
   } else {
     // console.log("tracking", url);
-    startTracking(url, id);
+    startTracking(url, id, originalUrl);
   }
 }
 
@@ -160,8 +160,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponce) => {
 
     case "popup-lockdown":
       session.inLockDown = true;
-      session.endTimeInLockdown = Date.now() + Time.minInMilliseconds(30);
-      chrome.alarms.create("LOCKDOWN", {
+      session.endTimeInLockdown = Date.now() + Time.minInMilliseconds(10); // There is a bug when the the mins is small (tested 0.5, 1, 2)
+      console.log("End time:", session.endTimeInLockdown)
+      chrome.alarms.create("LOCKDOWN", { 
         when: session.endTimeInLockdown, // lockdown distraction sites for 30 mins
       });
 
@@ -181,12 +182,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponce) => {
         // chrome.runtime.sendMessage({ request: "content-lockdown" });
         // stop tracking?
         // console.log(chrome.runtime.getURL("../content/content.html"))
-        common.getTabURLandID().then(({ id, url }) => {
+        common.getTabURLandID().then(({ id, url, originalUrl }) => {
           session.setActive(null);
           chrome.tabs.update(id, {
             // the update handler will be called
             // url: chrome.runtime.getURL("../content/content.html"),
-            url: common.getLockdownURL(url, session.endTimeInLockdown),
+            url: common.getLockdownURL(url, session.endTimeInLockdown, originalUrl),
           });
         });
       }
@@ -230,7 +231,7 @@ chrome.notifications.onButtonClicked.addListener((url, index) => {
 
 // In popup
 
-chrome.tabs.onActivated.addListener(async (info) => {
+chrome.tabs.onActivated.addListener(async () => {
   console.log("Activated");
 
   await track();

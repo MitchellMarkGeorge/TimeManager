@@ -1,4 +1,4 @@
-import { Heading, Text, Link, TextInput, SearchInput } from "evergreen-ui";
+import { Heading, Text, Link, SearchInput } from "evergreen-ui";
 import React, { Component } from "react";
 import ReactDOM from "react-dom";
 import Box from "ui-box";

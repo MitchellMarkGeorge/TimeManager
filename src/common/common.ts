@@ -1,4 +1,4 @@
-import { WebsiteData, DEFAULT_DATA, LoadDataResult } from "./types";
+import { DEFAULT_DATA, LoadDataResult } from "./types";
 
 export function getHostDomain(url: string): string {
   let domain: string;
@@ -19,11 +19,11 @@ export function getHostDomain(url: string): string {
 }
 
 // do i need to export it
-export const LOCKDOWNURL = getHostDomain(
+export const LOCKDOWN_URL = getHostDomain(
   chrome.runtime.getURL("../content/content.html")
 );
 
-export const STATISTICSURL = getHostDomain(
+export const STATISTICS_URL = getHostDomain(
   chrome.runtime.getURL("../options/options.html")
 );
 
@@ -71,19 +71,21 @@ export async function getURL(initalURL?: string) {
   return url;
 }
 
-export function getLockdownURL(distractionURL: string, time: number) {
+export function getLockdownURL(distractionURL: string, time: number, originalUrl) {
   let url = new URL(chrome.runtime.getURL("../content/content.html"));
   url.searchParams.set("url", distractionURL);
   url.searchParams.set("endTimeInLockdown", time.toString());
+  url.searchParams.set("originalUrl", originalUrl)
 
   return url.toString();
 }
 
-export function getTabURLandID(): Promise<{ url: string; id: number }> {
+export function getTabURLandID(): Promise<{ url: string; id: number, originalUrl: string }> {
   return new Promise((resolve, reject) => {
     chrome.tabs.query({ active: true, currentWindow: true }, (result) => {
       if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
       return resolve({
+        originalUrl: result[0]?.url || "",
         url: result[0]?.url ? getHostDomain(result[0]?.url) : "",
         id: result[0]?.id || -1,
       });
@@ -95,6 +97,6 @@ export function setInitalData(): void {
   // this automatically whitelists the lockdown page and statistics page so they are not tracked
   chrome.storage.local.set({
     distractions: DEFAULT_DATA,
-    whitelist: ["newtab", "extensions", "google.com", LOCKDOWNURL, STATISTICSURL],
+    whitelist: ["newtab", "extensions", "google.com", LOCKDOWN_URL, STATISTICS_URL],
   });
 }

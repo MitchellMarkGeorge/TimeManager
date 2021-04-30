@@ -137,9 +137,14 @@ class Popup extends Component<{}, State> {
   };
 
   timeLeftInLockdown = () => {
+    // fix time bug (dosent work if i use 1 or 2 mins)
     let timeLeftInLockdown = new Time(
       this?.state?.endTimeInLockdown - Date.now()
     ).inMinuites();
+
+    
+
+    console.log(timeLeftInLockdown)
     timeLeftInLockdown = Math.floor(timeLeftInLockdown);
     return timeLeftInLockdown;
   };
